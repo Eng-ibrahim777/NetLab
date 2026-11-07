@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">مستودع ملفات البرامج - Windows Edition Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- واجهة البداية التمهيدية (Splash Screen) -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <div class="splash-logo-img-wrapper">
+                <img src="logo.png" alt="Network Lab Logo" class="splash-logo-img">
+            </div>
+            <h2>Network Lab</h2>
+            <p>Made by Eng. Ibrahim Jaafar</p>
+        </div>
+    </div>
+
+    <!-- خلفية شبكية تقنية متحركة -->
+    <div class="tech-bg-overlay"></div>
+    <div class="cyber-grid"></div>
+
+    <header class="app-header">
+        <div class="logo-container">
+            <div class="header-logo-glow">
+                <img src="logo.png" alt="Logo" class="header-logo-img">
+            </div>
+            <div>
+                <h1><span data-i18n="mainTitle">مستودع البرامج والملفات</span> <span class="badge-tech">Pro v2.5</span></h1>
+                <p data-i18n="subTitle">مخصص لأنظمة Windows | تصفح وتحميل سريع للشبكات والنظم</p>
+            </div>
+        </div>
+
+        <!-- أدوات التحكم والتبديل وزر Report الأحمر -->
+        <div class="header-controls-group">
+            <button class="btn btn-danger-report" onclick="toggleReportModal(true)" title="إرسال ملاحظة أو بلاغ / Send Report">
+                <i class="fas fa-bug"></i> <span>Report</span>
+            </button>
+            <button class="btn-icon-toggle" onclick="toggleLanguage()" title="تغيير اللغة / Switch Language">
+                <i class="fas fa-globe"></i> <span id="langBtnText">EN</span>
+            </button>
+            <button class="btn-icon-toggle" onclick="toggleThemeMode()" title="تغيير المظهر / Toggle Theme">
+                <i class="fas fa-adjust" id="themeIcon"></i>
+            </button>
+        </div>
+
+        <!-- خيارات الإدارة للمسؤول -->
+        <div class="header-actions" id="adminHeaderAction" style="display: none;">
+            <button class="btn btn-secondary btn-glow" onclick="openReportsDashboard()" title="لوحة البلاغات الواردة">
+                <i class="fas fa-bell"></i> <span data-i18n="reportsDashBtn">البلاغات</span> <span id="reportsBadge" class="badge-count" style="display:none;">0</span>
+            </button>
+            <button class="btn btn-primary btn-glow" onclick="toggleUploadModal(true)">
+                <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="uploadBtn">رفع ملف جديد</span>
+            </button>
+            <button class="btn btn-secondary" onclick="handleAdminLogout()" title="تسجيل الخروج">
+                <i class="fas fa-sign-out-alt"></i> <span data-i18n="logoutBtn">خروج</span> (<span id="adminUserEmail"></span>)
+            </button>
+        </div>
+
+        <div class="header-actions" id="guestHeaderAction">
+            <button class="btn btn-secondary btn-tech-login" onclick="openAdminAuthModal()" title="تسجيل دخول المسؤول">
+                <i class="fas fa-user-shield"></i> <span data-i18n="adminLoginBtn">لوحة التحكم</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- منطقة الإفلات السريعة Drag & Drop للمسؤول -->
+        <section class="drop-zone" id="globalDropZone" style="display: none;">
+            <div class="drop-zone-content">
+                <i class="fas fa-file-import drop-icon"></i>
+                <p data-i18n="dropText">اسحب وأسقط الملفات هنا للرفع السريع على الويندوز</p>
+            </div>
+        </section>
+
+        <!-- لوحة التحكم والفلترة -->
+        <section class="controls-card">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="ابحث باسم البرنامج، الإضافة، أو وصف الملف..." oninput="filterFiles()">
+            </div>
+            <div class="filter-controls-wrapper">
+                <div class="filter-tags" id="categoryFilters">
+                    <button class="tag active" data-cat="all" onclick="setCategory('all')"><i class="fas fa-border-all"></i> <span data-i18n="catAll">الكل</span></button>
+                </div>
+                <div class="admin-category-actions" id="adminCategoryActions" style="display: none;">
+                    <button class="btn btn-secondary btn-add-cat" onclick="openAddCategoryModal()">
+                        <i class="fas fa-plus-circle"></i> <span data-i18n="addCategoryBtnText">إضافة قسم</span>
+                    </button>
+                    <button class="btn btn-secondary btn-del-cat" onclick="openDeleteCategoryModal()">
+                        <i class="fas fa-trash-alt"></i> <span data-i18n="delCategoryBtnText">حذف قسم</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- شبكة عرض الملفات -->
+        <section class="files-grid" id="filesGrid"></section>
+    </main>
+
+    <!-- الفوتر وتوقيع المطور -->
+    <footer class="app-footer-tech">
+        <p><i class="fas fa-code"></i> Made by Eng. Ibrahim Jaafar (Admin NetLab)</p>
+    </footer>
+
+    <!-- نافذة عرض لوحة تحكم البلاغات للمسؤول -->
+    <div class="modal-backdrop" id="reportsDashboardModal" onclick="handleReportsDashBackdropClick(event)">
+        <div class="modal-card auth-card reports-dashboard-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-inbox text-cyan"></i> <span data-i18n="reportsDashTitle">لوحة إشعارات وبلاغات المستخدمين</span></h3>
+                <button class="close-btn" onclick="toggleReportsDashboard(false)">&times;</button>
+            </div>
+            <div class="reports-list-container" id="reportsListContainer"></div>
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button type="button" class="btn btn-secondary" onclick="toggleReportsDashboard(false)" data-i18n="closeBtn">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة رفع البلاغات والاقتراحات -->
+    <div class="modal-backdrop" id="reportModal" onclick="handleReportBackdropClick(event)">
+        <div class="modal-card auth-card border-danger-modal">
+            <div class="modal-header">
+                <h3 class="text-danger"><i class="fas fa-paper-plane"></i> <span data-i18n="reportModalTitle">تقديم بلاغ / اقتراح / تطوير</span></h3>
+                <button class="close-btn" onclick="toggleReportModal(false)">&times;</button>
+            </div>
+            <form id="reportForm" onsubmit="handleSendReport(event)">
+                <div class="form-group">
+                    <label data-i18n="reportTypeLabel">نوع المشاركة</label>
+                    <select id="reportTypeInput" required>
+                        <option value="problem" data-i18n="optProblem">مشكلة أو خلل في الموقع</option>
+                        <option value="suggestion" data-i18n="optSuggestion">اقتراح أو فكرة جديدة</option>
+                        <option value="improvement" data-i18n="optImprovement">طلب تطوير ميزة حالية</option>
+                        <option value="other" data-i18n="optOther">ملاحظات أخرى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="reportDescLabel">التفاصيل والملاحظات</label>
+                    <textarea id="reportDescInput" rows="4" data-i18n-placeholder="reportDescPlaceholder" placeholder="اشرح المشكلة أو الفكرة بالتفصيل..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="reportFileLabel">مرفق (صورة أو ملف توضيحي - اختياري)</label>
+                    <div class="file-picker-box" onclick="document.getElementById('reportFileInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span id="reportFileLabelText" data-i18n="reportFilePickText">اضغط لإرفاق صورة/ملف توضيحي</span>
+                        <input type="file" id="reportFileInput" style="display:none;" onchange="updateReportFileNameDisplay(this)">
+                    </div>
+                </div>
+
+                <div class="progress-bar-container" id="reportProgressBarContainer">
+                    <div class="progress-bar" id="reportProgressBar"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleReportModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-danger-icon btn-confirm-del" id="sendReportSubmitBtn" data-i18n="sendReportBtn">إرسال التقرير الآن</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تسجيل دخول المسؤول -->
+    <div class="modal-backdrop" id="authModal" onclick="handleAuthBackdropClick(event)">
+        <div class="modal-card auth-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-shield"></i> <span data-i18n="modalAdminTitle">دخول المسؤول</span></h3>
+                <button class="close-btn" onclick="toggleAuthModal(false)">&times;</button>
+            </div>
+            <form id="authForm" onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> <span data-i18n="emailLabel">البريد الإلكتروني</span></label>
+                    <input type="email" id="adminEmailInput" placeholder="admin@example.com" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> <span data-i18n="passLabel">كلمة المرور</span></label>
+                    <input type="password" id="adminPasswordInput" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleAuthModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" id="loginSubmitBtn" data-i18n="loginBtn">تسجيل الدخول</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة قسم جديد -->
+    <div class="modal-backdrop" id="addCategoryModal" onclick="handleAddCategoryBackdropClick(event)">
+        <div class="modal-card auth-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-plus"></i> <span data-i18n="modalCatTitle">إضافة قسم جديد</span></h3>
+                <button class="close-btn" onclick="toggleAddCategoryModal(false)">&times;</button>
+            </div>
+            <form id="addCategoryForm" onsubmit="handleAddNewCategory(event)">
+                <div class="form-group">
+                    <label data-i18n="catKeyLabel">معرف القسم بالإنجليزية</label>
+                    <input type="text" id="newCatKey" placeholder="security" required pattern="[a-z0-9]+" title="حروف إنجليزية صغيرة بدون مسافات">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="catNameArLabel">اسم القسم بالعربية</label>
+                    <input type="text" id="newCatNameAr" placeholder="الأمن السيبراني" required>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="catNameEnLabel">اسم القسم بالإنجليزية</label>
+                    <input type="text" id="newCatNameEn" placeholder="Cybersecurity" required>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="catIconLabel">أيقونة FontAwesome</label>
+                    <input type="text" id="newCatIcon" placeholder="fa-shield-alt" value="fa-folder" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleAddCategoryModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="saveCatBtn">حفظ وإضافة القسم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة حذف قسم -->
+    <div class="modal-backdrop" id="deleteCategoryModal" onclick="handleDeleteCategoryBackdropClick(event)">
+        <div class="modal-card auth-card danger-modal-card">
+            <div class="modal-header">
+                <h3 class="text-danger"><i class="fas fa-trash-alt"></i> <span data-i18n="modalDelCatTitle">حذف قسم مخصص</span></h3>
+                <button class="close-btn" onclick="toggleDeleteCategoryModal(false)">&times;</button>
+            </div>
+            <form id="deleteCategoryForm" onsubmit="handleDeleteCategory(event)">
+                <div class="form-group">
+                    <label data-i18n="selectCatLabel">اختر القسم المراد حذفه</label>
+                    <select id="delCategorySelect" required></select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleDeleteCategoryModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-danger-icon btn-confirm-del" data-i18n="confirmDeleteCatBtn">حذف القسم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إدخال كلمة السر الخاصة بالملف -->
+    <div class="modal-backdrop" id="passwordModal" onclick="handlePasswordBackdropClick(event)">
+        <div class="modal-card auth-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock"></i> <span data-i18n="fileLockTitle">حماية الملف بكلمة سر</span></h3>
+                <button class="close-btn" onclick="togglePasswordModal(false)">&times;</button>
+            </div>
+            <form id="passwordForm" onsubmit="handleVerifyPassword(event)">
+                <div class="modal-body-tech">
+                    <p data-i18n="fileLockDesc">هذا الملف محمي. أدخل كلمة السر الخاصة بتحميل:</p>
+                    <span class="file-name-delete-target" id="targetFileTitle">--</span>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="filePasswordInput" data-i18n-placeholder="passPlaceholder" placeholder="أدخل كلمة السر هنا..." required autocomplete="off">
+                    <div id="passwordFeedback" class="password-feedback"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="togglePasswordModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="verifyBtn">تحقق ومتابعة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد التحميل النهائية -->
+    <div class="modal-backdrop" id="confirmDownloadModal" onclick="handleConfirmDownloadBackdropClick(event)">
+        <div class="modal-card auth-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-cloud-download-alt"></i> <span data-i18n="confirmDownloadTitle">تأكيد التحميل</span></h3>
+                <button class="close-btn" onclick="toggleConfirmDownloadModal(false)">&times;</button>
+            </div>
+            <div class="modal-body-tech">
+                <p data-i18n="confirmDownloadDesc">هل أنت متأكد من تحميل الملف:</p>
+                <span class="file-name-delete-target" id="finalDownloadFileName">--</span>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="toggleConfirmDownloadModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="proceedDownloadBtn" data-i18n="proceedBtn">تأكيد وبدء التحميل</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد الحذف للمسؤول -->
+    <div class="modal-backdrop" id="deleteModal" onclick="handleDeleteBackdropClick(event)">
+        <div class="modal-card auth-card danger-modal-card">
+            <div class="modal-header">
+                <h3 class="text-danger"><i class="fas fa-exclamation-triangle"></i> <span data-i18n="deleteTitle">تأكيد حذف الملف</span></h3>
+                <button class="close-btn" onclick="toggleDeleteModal(false)">&times;</button>
+            </div>
+            <div class="modal-body-tech">
+                <p data-i18n="deleteDesc">هل أنت متأكد من رغبتك في حذف هذا الملف بشكل نهائي من السيرفر السحابي؟</p>
+                <span class="file-name-delete-target" id="deleteFileNameTarget">--</span>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="toggleDeleteModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                <button type="button" class="btn btn-danger-icon btn-confirm-del" id="confirmDeleteBtn" data-i18n="confirmDeleteBtn">حذف نهائي</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة رفع الملفات Modal -->
+    <div class="modal-backdrop" id="uploadModal" onclick="handleBackdropClick(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-plus"></i> <span data-i18n="uploadModalTitle">رفع ملف جديد للويندوز</span></h3>
+                <button class="close-btn" onclick="toggleUploadModal(false)">&times;</button>
+            </div>
+            <form id="uploadForm" onsubmit="handleUpload(event)">
+                <div class="form-group">
+                    <label data-i18n="chooseFileLabel">اختر الملف</label>
+                    <div class="file-picker-box" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-file-upload"></i>
+                        <span id="filePickerLabel" data-i18n="filePickerText">اضغط لاختيار ملف من جهازك</span>
+                        <input type="file" id="fileInput" required style="display:none;" onchange="updateFileNameDisplay(this)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="fileNameLabel">اسم البرنامج / الملف</label>
+                    <input type="text" id="fileNameInput" placeholder="مثال: Wireshark Network Analyzer" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="categoryLabel">التصنيف</label>
+                        <select id="fileCategoryInput" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="winVersionLabel">إصدار الويندوز المتوافق</label>
+                        <input type="text" id="fileVerInput" placeholder="Win 10/11 x64" value="Win 10 / Win 11 (64-bit)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="descLabel">الوصف المختصر</label>
+                    <textarea id="fileDescInput" rows="3" data-i18n-placeholder="descPlaceholder" placeholder="اكتب وصفاً قصيراً لمحتوى الملف وكيفية استخدامه..." required></textarea>
+                </div>
+
+                <!-- حقل كلمة السر للملف (تمت إضافته لمنع توقف الرفع) -->
+                <div class="form-group">
+                    <label>كلمة سر حماية التحميل (اختياري)</label>
+                    <input type="password" id="filePasswordInputModal" placeholder="افتراضي: 1234" value="1234">
+                </div>
+
+                <div class="progress-bar-container" id="progressBarContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleUploadModal(false)" data-i18n="cancelBtn">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" data-i18n="uploadSubmitBtn">رفع الملف الآن</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نظام التنبيهات Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle toast-icon"></i>
+        <span id="toastMessage">تم العملية بنجاح!</span>
+    </div>
+
+    <!-- مكتبات Firebase (Auth + Firestore) و Supabase (التخزين) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="app.js"></script>
+</body>
+</html>
